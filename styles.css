@@ -1,0 +1,275 @@
+/* variables Generales */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --accent-color: #16a085;
+    --warning-color: #d35400;
+    --danger-color: #c0392b;
+    --light-bg: #ecf0f1;
+    --card-bg: #ffffff;
+    --text-color: #2c3e50;
+    --border-color: #bdc3c7;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ==========================================================================
+   2. HEADER Y FOOTER
+   ========================================================================== */
+header {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    padding: 25px 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 5px;
+}
+
+header p {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background: var(--border-color);
+    margin: 40px 0;
+}
+
+/* ==========================================================================
+   3. DASHBOARD (CSS GRID RESPONSIVE)
+   ========================================================================== */
+.dashboard-section h2, 
+.form-section h2, 
+.table-section h2 {
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+}
+
+.metrics-grid {
+    display: grid;
+    /* Esto hace que si no caben las tarjetas, se bajen solas automáticamente */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 5px solid var(--accent-color);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+
+.card p {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.card.warning {
+    border-left-color: var(--warning-color);
+}
+
+.card.info {
+    border-left-color: #2980b9;
+}
+
+.card small {
+    display: block;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-top: 5px;
+}
+
+/* ==========================================================================
+   4. FORMULARIO
+   ========================================================================== */
+#inventory-form {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.form-group input, 
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.form-group input:focus, 
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+button {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    width: 100%;
+    transition: background 0.2s ease;
+}
+
+button:hover {
+    background-color: #117a65;
+}
+
+.btn-secondary {
+    background-color: #7f8c8d;
+    margin-top: 10px;
+}
+
+.btn-secondary:hover {
+    background-color: #626567;
+}
+
+/* ==========================================================================
+   5. TABLA RESPONSIVE
+   ========================================================================== */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Permite scroll horizontal en pantallas muy chicas */
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    min-width: 600px; /* Asegura que la tabla mantenga forma en móviles */
+}
+
+th, td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--light-bg);
+}
+
+th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f8f9f9;
+}
+
+/* Estilos de botones de acción dentro de la tabla */
+.btn-action {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    width: auto;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.btn-edit {
+    background-color: #2980b9;
+}
+.btn-edit:hover { background-color: #21618c; }
+
+.btn-delete {
+    background-color: var(--danger-color);
+}
+.btn-delete:hover { background-color: #922b21; }
+
+/* Tags de estado */
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+}
+.badge.activo { background-color: #27ae60; }
+.badge.mantenimiento { background-color: var(--warning-color); }
+.badge.baja { background-color: #7f8c8d; }
+
+/* ==========================================================================
+   6. MEDIA QUERIES (Ajustes para pantallas medianas/grandes)
+   ========================================================================== */
+@media (min-width: 768px) {
+    /* El botón ya no ocupa todo el ancho en pantallas grandes */
+    button {
+        width: auto;
+        display: inline-block;
+    }
+    
+    /* Convertimos el formulario en un diseño de dos columnas */
+    #inventory-form {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .form-group:nth-child(2) {
+        grid-column: span 1;
+    }
+    
+    /* El botón de guardar ocupa las dos columnas abajo */
+    button[type="submit"] {
+        grid-column: span 2;
+        justify-self: start;
+    }
+}

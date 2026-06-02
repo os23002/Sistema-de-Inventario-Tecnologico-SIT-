@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> SIT sistema de Inventario Tecnoclogico </title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>SIT</h1>
+        <p>Sistema de Inventario Tecnoclogico</p>
+    </header>
+
+    <main class="container">
+        <!-- dashboard metricas para el tiempo real  -->
+        <section class="dashboard-section">
+            <h2>Dashboard Operativo</h2>
+            <div class="metrics-grid">
+                <div class="card">
+                    <h3>Total Equipos</h3>
+                    <p id="metric-total">0</p>
+                </div>
+                <div class="card warning">
+                    <h3>En Mantenimiento</h3>
+                    <p id="metric-mantenimiento">0</p>
+                </div>
+                <div class="card info">
+                    <h3>Ubicación Verificada</h3>
+                    <p id="metric-ubicacion">Detectando...</p>
+                    <small id="metric-network">Cargando datos de red...</small>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- seccion para el formulario (Crear / Editar) -->
+        <section class="form-section">
+            <h2 id="form-title">Registrar Nuevo Activo</h2>
+            <form id="inventory-form">
+                <!-- ID oculto para cuando estemos editando -->
+                <input type="hidden" id="asset-id-hidden">
+
+                <div class="form-group">
+                    <label for="asset-tag">Tag de Activo / Número de Serie:</label>
+                    <input type="text" id="asset-tag" required placeholder="Ej: CPU-2026-001">
+                </div>
+
+                <div class="form-group">
+                    <label for="asset-type">Tipo de Dispositivo:</label>
+                    <select id="asset-type" required>
+                        <option value="">Seleccione una opción</option>
+                        <option value="CPU">Unidad Central (CPU)</option>
+                        <option value="Monitor">Monitor</option>
+                        <option value="Laptop">Laptop</option>
+                        <option value="Servidor">Servidor</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="asset-brand">Marca:</label>
+                    <input type="text" id="asset-brand" required placeholder="Ej: Dell, HP, Lenovo">
+                </div>
+
+                <div class="form-group">
+                    <label for="asset-model">Modelo:</label>
+                    <input type="text" id="asset-model" required placeholder="Ej: ThinkCentre M70q">
+                </div>
+
+                <div class="form-group">
+                    <label for="asset-status">Estado Operativo:</label>
+                    <select id="asset-status" required>
+                        <option value="Activo">Activo / Operativo</option>
+                        <option value="Mantenimiento">En Mantenimiento Técnica</option>
+                        <option value="Baja">Baja Definitiva</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="btn-submit">Guardar Equipo</button>
+                <button type="button" id="btn-cancel" class="btn-secondary" style="display: none;">Cancelar Edición</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- acciones de eliminar y editar -->
+        <section class="table-section">
+            <h2>Inventario de Activos Registrados</h2>
+            <div class="table-responsive">
+                <table id="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Tag / Serial</th>
+                            <th>Tipo</th>
+                            <th>Marca / Modelo</th>
+                            <th>Estado</th>
+                            <th>Ubicación de Auditoría</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody">
+                       
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 - Proyecto Individual Frontend</p>
+    </footer>
+
+    <!-- Vinculación para el script principal -->
+    <script src="app.js"></script>
+</body>
+</html>
