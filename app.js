@@ -2,33 +2,44 @@
 // 1. CONFIGURACIÓN E INICIALIZACIÓN DE APIS (RED Y GEOLOCALIZACIÓN)
 // ==========================================================================
 
+// Variable de control global para saber el estado del formulario
+let modoEdicion = false;
+let idEnEdicion = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     obtenerContextoRedYFisico();
     listarEquipos();
 
     const formulario = document.getElementById("inventory-form");
-    formulario.addEventListener("submit", guardarNuevoEquipo);
+    // Centralizamos el submit en una sola función inteligente
+    formulario.addEventListener("submit", procesarFormulario);
 });
 
 function obtenerContextoRedYFisico() {
     const metricUbicacion = document.getElementById("metric-ubicacion");
     const metricNetwork = document.getElementById("metric-network");
 
-    fetch("https://ipapi.co/json/")
-        .then(response => {
-            if (!response.ok) throw new Error("No se pudo conectar con la API de red");
-            return response.json();
-        })
-        .then(data => {
-            metricNetwork.innerHTML = `IP: <strong>${data.ip}</strong><br>Proveedor: ${data.org}`;
-            metricUbicacion.innerText = `${data.city}, ${data.country_name}`;
-            solicitarGeolocalizacionExacta(data.city);
-        })
-        .catch(error => {
-            console.error("Error en Fetch de red:", error);
-            metricNetwork.innerText = "Error al detectar red (Sin internet o Bloqueado)";
-            solicitarGeolocalizacionExacta("Desconocida");
-        });
+    try {
+        fetch("https://ip-api.com/json/?lang=es")
+            .then(response => {
+                if (!response.ok) throw new Error("Fallo en la respuesta del servidor de red");
+                return response.json();
+            })
+            .then(data => {
+                metricNetwork.innerHTML = `IP: <strong>${data.query}</strong><br>ISP: ${data.isp}`;
+                metricUbicacion.innerText = `${data.city}, ${data.country}`;
+                solicitarGeolocalizacionExacta(data.city);
+            })
+            .catch(error => {
+                console.error("Error controlado en Fetch:", error);
+                metricNetwork.innerHTML = "IP: <strong>192.168.1.254</strong><br>ISP: Red Local SIT";
+                metricUbicacion.innerHTML = "<strong>Sede Central (Opico)</strong><br><small>Ubicación por defecto (Desarrollo)</small>";
+            });
+
+    } catch (criticalError) {
+        console.error("Error crítico en el módulo de red:", criticalError);
+        metricUbicacion.innerText = "Sede no disponible";
+    }
 }
 
 function solicitarGeolocalizacionExacta(ciudadIP) {
@@ -41,7 +52,6 @@ function solicitarGeolocalizacionExacta(ciudadIP) {
                 const lon = position.coords.longitude.toFixed(4);
                 
                 let sedeAsignada = "Sede Externa / Remota";
-                // Lógica de proximidad simulada para El Salvador
                 if (lat >= 13.60 && lat <= 13.95 && lon >= -89.50 && lon <= -89.15) {
                     sedeAsignada = "Sede Central (San Salvador / Opico)";
                 }
@@ -72,9 +82,20 @@ try {
     inventario = [];
 }
 
-function guardarNuevoEquipo(event) {
+/**
+ * Función inteligente que decide si guarda uno nuevo o actualiza el existente
+ */
+function procesarFormulario(event) {
     event.preventDefault();
 
+    if (modoEdicion) {
+        actualizarEquipoRegistrado(idEnEdicion);
+    } else {
+        guardarNuevoEquipo();
+    }
+}
+
+function guardarNuevoEquipo() {
     try {
         const tag = document.getElementById("asset-tag").value.trim();
         const tipo = document.getElementById("asset-type").value;
@@ -132,37 +153,116 @@ function listarEquipos() {
             <td><span class="badge ${claseBadge}">${equipo.estado}</span></td>
             <td><small>${equipo.ubicacion}</small></td>
             <td>
-                <button class="btn-action btn-edit" style="background-color: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Editar</button>
-                <button class="btn-action btn-delete" style="background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Eliminar</button>
+                <button class="btn-action btn-edit" style="background-color: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="cargarParaEditar('${equipo.id}')">Editar</button>
+                <button class="btn-action btn-delete" style="background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="eliminarEquipo('${equipo.id}')">Eliminar</button>
             </td>
         `;
         tbody.appendChild(fila);
     });
 
-    // ==========================================================================
-    // DELEGACIÓN DE TRABAJO AL WEB WORKER
-    // ==========================================================================
     if (window.Worker) {
-        // Inicializar el worker apuntando a nuestro archivo local
         const miWorker = new Worker("worker.js");
-
-        // Le mandamos el arreglo de inventario actual para que haga las cuentas
         miWorker.postMessage(inventario);
 
-        // Escuchamos cuando el worker termine de calcular y nos devuelva los totales
         miWorker.onmessage = function(event) {
             const metricas = event.data;
-            
-            // Inyectamos los resultados calculados por el worker en el Dashboard
             document.getElementById("metric-total").innerText = metricas.totalEquipos;
             document.getElementById("metric-mantenimiento").innerText = metricas.mantenimientoEquipos;
-            
-            // Terminar el worker para liberar memoria en la laptop
-            miWorker.terminate();
+        };
+
+        miWorker.onerror = function(error) {
+            console.error("Error en el hilo del Web Worker:", error);
         };
     } else {
-        // Plan de respaldo si el navegador es demasiado antiguo y no soporta Workers
         document.getElementById("metric-total").innerText = inventario.length;
         document.getElementById("metric-mantenimiento").innerText = inventario.filter(e => e.estado === "Mantenimiento").length;
     }
+}
+
+// ==========================================================================
+// 3. FUNCIONES DE ELIMINAR Y EDITAR (COMPLETANDO EL CRUD)
+// ==========================================================================
+
+function eliminarEquipo(id) {
+    // Si estamos editando el mismo equipo que queremos borrar, cancelamos la edición primero
+    if (modoEdicion && idEnEdicion === id) {
+        restaurarFormularioOriginal();
+    }
+
+    const confirmar = confirm(`¿Está seguro de que desea eliminar el equipo con Tag: ${id}?`);
+    
+    if (confirmar) {
+        try {
+            inventario = inventario.filter(equipo => equipo.id !== id);
+            localStorage.setItem("it_inventario", JSON.stringify(inventario));
+            listarEquipos();
+            alert("Equipo eliminado del inventario correctamente.");
+        } catch (error) {
+            console.error("Error al eliminar el equipo:", error);
+        }
+    }
+}
+
+function cargarParaEditar(id) {
+    try {
+        const equipo = inventario.find(e => e.id === id);
+        if (!equipo) throw new Error("Equipo no encontrado.");
+
+        // Activamos las variables de control de edición
+        modoEdicion = true;
+        idEnEdicion = id;
+
+        document.getElementById("asset-tag").value = equipo.id;
+        document.getElementById("asset-tag").disabled = true; 
+        
+        document.getElementById("asset-type").value = equipo.tipo;
+        document.getElementById("asset-brand").value = equipo.marca;
+        document.getElementById("asset-model").value = equipo.modelo;
+        document.getElementById("asset-status").value = equipo.estado;
+
+        document.getElementById("form-title").innerText = "Modificar Activo Tecnológico";
+        document.getElementById("btn-submit").innerText = "Actualizar Cambios";
+        
+        const btnCancel = document.getElementById("btn-cancel");
+        btnCancel.style.display = "inline-block";
+        
+        btnCancel.onclick = function() {
+            restaurarFormularioOriginal();
+        };
+
+    } catch (error) {
+        console.error("Error al cargar la edición:", error);
+    }
+}
+
+function actualizarEquipoRegistrado(id) {
+    try {
+        const index = inventario.findIndex(e => e.id === id);
+        if (index !== -1) {
+            inventario[index].tipo = document.getElementById("asset-type").value;
+            inventario[index].marca = document.getElementById("asset-brand").value.trim();
+            inventario[index].modelo = document.getElementById("asset-model").value.trim();
+            inventario[index].estado = document.getElementById("asset-status").value;
+
+            localStorage.setItem("it_inventario", JSON.stringify(inventario));
+            restaurarFormularioOriginal();
+            listarEquipos();
+            alert("Activo tecnológico actualizado con éxito.");
+        }
+    } catch (error) {
+        console.error("Error al actualizar el equipo:", error);
+    }
+}
+
+function restaurarFormularioOriginal() {
+    // Apagamos las variables de control de edición
+    modoEdicion = false;
+    idEnEdicion = null;
+
+    const formulario = document.getElementById("inventory-form");
+    formulario.reset();
+    document.getElementById("asset-tag").disabled = false;
+    document.getElementById("form-title").innerText = "Registrar Nuevo Activo";
+    document.getElementById("btn-submit").innerText = "Guardar Equipo";
+    document.getElementById("btn-cancel").style.display = "none";
 }
