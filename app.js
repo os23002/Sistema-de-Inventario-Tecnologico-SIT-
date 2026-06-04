@@ -2,7 +2,6 @@
 // 1. CONFIGURACIÓN E INICIALIZACIÓN DE APIS (RED Y GEOLOCALIZACIÓN)
 // ==========================================================================
 
-// Variable de control global para saber el estado del formulario
 let modoEdicion = false;
 let idEnEdicion = null;
 
@@ -11,8 +10,11 @@ document.addEventListener("DOMContentLoaded", () => {
     listarEquipos();
 
     const formulario = document.getElementById("inventory-form");
-    // Centralizamos el submit en una sola función inteligente
     formulario.addEventListener("submit", procesarFormulario);
+
+    // Conexión de los eventos del buscador y filtro
+    document.getElementById("search-input").addEventListener("input", filtrarInventario);
+    document.getElementById("filter-status").addEventListener("change", filtrarInventario);
 });
 
 function obtenerContextoRedYFisico() {
@@ -82,9 +84,6 @@ try {
     inventario = [];
 }
 
-/**
- * Función inteligente que decide si guarda uno nuevo o actualiza el existente
- */
 function procesarFormulario(event) {
     event.preventDefault();
 
@@ -184,7 +183,6 @@ function listarEquipos() {
 // ==========================================================================
 
 function eliminarEquipo(id) {
-    // Si estamos editando el mismo equipo que queremos borrar, cancelamos la edición primero
     if (modoEdicion && idEnEdicion === id) {
         restaurarFormularioOriginal();
     }
@@ -208,7 +206,6 @@ function cargarParaEditar(id) {
         const equipo = inventario.find(e => e.id === id);
         if (!equipo) throw new Error("Equipo no encontrado.");
 
-        // Activamos las variables de control de edición
         modoEdicion = true;
         idEnEdicion = id;
 
@@ -225,10 +222,6 @@ function cargarParaEditar(id) {
         
         const btnCancel = document.getElementById("btn-cancel");
         btnCancel.style.display = "inline-block";
-        
-        btnCancel.onclick = function() {
-            restaurarFormularioOriginal();
-        };
 
     } catch (error) {
         console.error("Error al cargar la edición:", error);
@@ -255,7 +248,6 @@ function actualizarEquipoRegistrado(id) {
 }
 
 function restaurarFormularioOriginal() {
-    // Apagamos las variables de control de edición
     modoEdicion = false;
     idEnEdicion = null;
 
@@ -265,4 +257,51 @@ function restaurarFormularioOriginal() {
     document.getElementById("form-title").innerText = "Registrar Nuevo Activo";
     document.getElementById("btn-submit").innerText = "Guardar Equipo";
     document.getElementById("btn-cancel").style.display = "none";
+}
+
+// ==========================================================================
+// 4. MÓDULO DE BÚSQUEDA Y FILTRADO EN TIEMPO REAL
+// ==========================================================================
+
+function filtrarInventario() {
+    const textoBusqueda = document.getElementById("search-input").value.toLowerCase().trim();
+    const estadoSeleccionado = document.getElementById("filter-status").value;
+
+    const tbody = document.getElementById("inventory-tbody");
+    tbody.innerHTML = "";
+
+    const inventarioFiltrado = inventario.filter(equipo => {
+        const coincideTexto = equipo.id.toLowerCase().includes(textoBusqueda) ||
+                              equipo.marca.toLowerCase().includes(textoBusqueda) ||
+                              equipo.modelo.toLowerCase().includes(textoBusqueda);
+
+        const coincideEstado = (estadoSeleccionado === "Todos") || (equipo.estado === estadoSeleccionado);
+
+        return coincideTexto && coincideEstado;
+    });
+
+    if (inventarioFiltrado.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">No se encontraron activos con los filtros aplicados.</td></tr>`;
+        return;
+    }
+
+    inventarioFiltrado.forEach(equipo => {
+        const fila = document.createElement("tr");
+        let claseBadge = "activo";
+        if (equipo.estado === "Mantenimiento") claseBadge = "mantenimiento";
+        if (equipo.estado === "Baja") claseBadge = "baja";
+
+        fila.innerHTML = `
+            <td><strong>${equipo.id}</strong></td>
+            <td>${equipo.tipo}</td>
+            <td>${equipo.marca} ${equipo.modelo}</td>
+            <td><span class="badge ${claseBadge}">${equipo.estado}</span></td>
+            <td><small>${equipo.ubicacion}</small></td>
+            <td>
+                <button class="btn-action btn-edit" style="background-color: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="cargarParaEditar('${equipo.id}')">Editar</button>
+                <button class="btn-action btn-delete" style="background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="eliminarEquipo('${equipo.id}')">Eliminar</button>
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
 }
