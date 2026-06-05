@@ -1,16 +1,29 @@
-/* variables Generales */
+/* ==========================================================================
+   CONFIGURACIÓN DE VARIABLES (CONTRATE ENFOQUE ORIGINAL)
+   ========================================================================== */
 :root {
-    --primary-color: #2c3e50;
-    --secondary-color: #34495e;
-    --accent-color: #16a085;
-    --warning-color: #d35400;
-    --danger-color: #c0392b;
-    --light-bg: #ecf0f1;
-    --card-bg: #ffffff;
-    --text-color: #2c3e50;
-    --border-color: #bdc3c7;
+    --bg-principal: #f4f6f7;       /* Gris claro original de fondo */
+    --bg-tarjetas: #ffffff;        /* Blanco original para las tarjetas */
+    --texto-principal: #2c3e50;    /* Color oscuro para los textos */
+    --texto-secundario: #7f8c8d;  /* Color gris para etiquetas secundarias */
+    --borde-color: #e2e8f0;        /* Bordes suaves originales */
+    --bg-header: #2c3e50;          /* Azul oscuro original del Header */
+    --texto-header: #ffffff;
 }
 
+/* Cambios controlados únicamente cuando el modo noche esté activo */
+body.dark-mode {
+    --bg-principal: #121212;       /* Fondo oscuro profundo */
+    --bg-tarjetas: #1e1e1e;        /* Tarjetas gris oscuro */
+    --texto-principal: #f5f6fa;    /* Texto claro */
+    --texto-secundario: #a0aec0;   /* Texto secundario claro */
+    --borde-color: #333333;        /* Bordes oscuros */
+    --bg-header: #1a1a1a;          /* Header aún más oscuro */
+}
+
+/* ==========================================================================
+   ESTILOS BASE (ESTÉTICA ANTIGUA RESTAURADA)
+   ========================================================================== */
 * {
     margin: 0;
     padding: 0;
@@ -19,257 +32,191 @@
 }
 
 body {
-    background-color: var(--light-bg);
-    color: var(--text-color);
-    line-height: 1.6;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
+    background-color: var(--bg-principal);
+    color: var(--texto-principal);
+    transition: background-color 0.3s ease, color 0.3s ease;
     padding: 20px;
 }
 
-/* ==========================================================================
-   2. HEADER Y FOOTER
-   ========================================================================== */
 header {
-    background-color: var(--primary-color);
-    color: #ffffff;
-    padding: 25px 20px;
+    background-color: var(--bg-header);
+    color: var(--texto-header);
     text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
 }
 
 header h1 {
     font-size: 2.2rem;
-    margin-bottom: 5px;
+    letter-spacing: 2px;
 }
 
 header p {
-    font-size: 1rem;
-    opacity: 0.9;
+    font-size: 0.95rem;
+    opacity: 0.85;
+    margin-top: 5px;
 }
 
-footer {
-    text-align: center;
-    padding: 20px;
-    margin-top: 40px;
-    color: #7f8c8d;
-    font-size: 0.9rem;
-}
-
-hr {
-    border: 0;
-    height: 1px;
-    background: var(--border-color);
-    margin: 40px 0;
-}
-
-/* ==========================================================================
-   3. DASHBOARD (CSS GRID RESPONSIVE)
-   ========================================================================== */
-.dashboard-section h2, 
-.form-section h2, 
-.table-section h2 {
-    margin-bottom: 20px;
-    color: var(--secondary-color);
-}
-
+/* Grids del Dashboard Operativo */
 .metrics-grid {
     display: grid;
-    /* Esto hace que si no caben las tarjetas, se bajen solas automáticamente */
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
+    margin-bottom: 30px;
 }
 
 .card {
-    background-color: var(--card-bg);
+    background-color: var(--bg-tarjetas);
+    color: var(--texto-principal);
+    border-left: 5px solid #2ecc71;
     padding: 20px;
-    border-radius: 8px;
-    border-left: 5px solid var(--accent-color);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.card.warning { border-left-color: #e67e22; }
+.card.info { border-left-color: #3498db; }
+
 .card h3 {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
-    color: #7f8c8d;
+    color: var(--texto-secundario);
     margin-bottom: 10px;
 }
 
 .card p {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: bold;
-    color: var(--primary-color);
 }
 
-.card.warning {
-    border-left-color: var(--warning-color);
-}
-
-.card.info {
-    border-left-color: #2980b9;
-}
-
-.card small {
-    display: block;
-    font-size: 0.85rem;
-    color: #7f8c8d;
-    margin-top: 5px;
-}
-
-/* ==========================================================================
-   4. FORMULARIO
-   ========================================================================== */
-#inventory-form {
-    background-color: var(--card-bg);
+/* Contenedores de Formulario y Tabla */
+.form-container, .table-container {
+    background-color: var(--bg-tarjetas);
+    color: var(--texto-principal);
     padding: 25px;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 30px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.form-container h2 {
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    border-bottom: 2px solid var(--borde-color);
+    padding-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
 }
 
 .form-group {
+    display: flex;
+    flex-direction: column;
     margin-bottom: 15px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
+    font-size: 0.9rem;
     font-weight: 600;
-    font-size: 0.95rem;
+    margin-bottom: 8px;
 }
 
-.form-group input, 
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
+/* Inputs, Selects y Buscador */
+input, select {
+    padding: 11px;
+    border: 1px solid var(--borde-color);
     border-radius: 4px;
-    font-size: 1rem;
-    color: var(--text-color);
+    background-color: var(--bg-tarjetas);
+    color: var(--texto-principal);
+    font-size: 0.95rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
-.form-group input:focus, 
-.form-group select:focus {
-    outline: none;
-    border-color: var(--accent-color);
+/* Evitar letras ocultas en los selectores del filtro y formulario */
+select option {
+    background-color: var(--bg-tarjetas);
+    color: var(--texto-principal);
 }
 
-button {
-    background-color: var(--accent-color);
+input:disabled {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
+}
+
+body.dark-mode input:disabled {
+    background-color: #333333 !important;
+    color: #777777 !important;
+}
+
+/* Botón de Enviar Formulario */
+.btn-submit {
+    background-color: #16a085;
     color: white;
     padding: 12px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1rem;
     font-weight: bold;
-    width: 100%;
-    transition: background 0.2s ease;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
 }
+.btn-submit:hover { background-color: #117a65; }
 
-button:hover {
-    background-color: #117a65;
-}
-
-.btn-secondary {
-    background-color: #7f8c8d;
-    margin-top: 10px;
-}
-
-.btn-secondary:hover {
-    background-color: #626567;
-}
-
-/* ==========================================================================
-   5. TABLA RESPONSIVE
-   ========================================================================== */
+/* Estructura de la Tabla */
 .table-responsive {
+    overflow-x: auto;
     width: 100%;
-    overflow-x: auto; /* Permite scroll horizontal en pantallas muy chicas */
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    text-align: left;
-    min-width: 600px; /* Asegura que la tabla mantenga forma en móviles */
+    margin-top: 10px;
 }
 
 th, td {
-    padding: 12px 15px;
-    border-bottom: 1px solid var(--light-bg);
+    padding: 14px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--borde-color);
 }
 
 th {
-    background-color: var(--primary-color);
+    background-color: #2c3e50; /* Encabezado de tabla oscuro original fijo */
     color: white;
-    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+body.dark-mode th {
+    background-color: #111111; /* Encabezado en modo noche */
 }
 
 tr:hover {
-    background-color: #f8f9f9;
+    background-color: rgba(0, 0, 0, 0.015);
+}
+body.dark-mode tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
 }
 
-/* Estilos de botones de acción dentro de la tabla */
-.btn-action {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    width: auto;
-    margin-right: 5px;
-    display: inline-block;
-}
-
-.btn-edit {
-    background-color: #2980b9;
-}
-.btn-edit:hover { background-color: #21618c; }
-
-.btn-delete {
-    background-color: var(--danger-color);
-}
-.btn-delete:hover { background-color: #922b21; }
-
-/* Tags de estado */
+/* Badges de estado operativos */
 .badge {
-    padding: 4px 8px;
+    padding: 5px 10px;
     border-radius: 12px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: bold;
     color: white;
+    display: inline-block;
 }
-.badge.activo { background-color: #27ae60; }
-.badge.mantenimiento { background-color: var(--warning-color); }
-.badge.baja { background-color: #7f8c8d; }
-
-/* ==========================================================================
-   6. MEDIA QUERIES (Ajustes para pantallas medianas/grandes)
-   ========================================================================== */
-@media (min-width: 768px) {
-    /* El botón ya no ocupa todo el ancho en pantallas grandes */
-    button {
-        width: auto;
-        display: inline-block;
-    }
-    
-    /* Convertimos el formulario en un diseño de dos columnas */
-    #inventory-form {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-    
-    .form-group:nth-child(2) {
-        grid-column: span 1;
-    }
-    
-    /* El botón de guardar ocupa las dos columnas abajo */
-    button[type="submit"] {
-        grid-column: span 2;
-        justify-self: start;
-    }
-}
+.badge.activo { background-color: #2ecc71; }
+.badge.mantenimiento { background-color: #e67e22; }
+.badge.baja { background-color: #e74c3c; }

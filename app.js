@@ -1,20 +1,27 @@
 // ==========================================================================
-// 1. CONFIGURACIÓN E INICIALIZACIÓN DE APIS (RED Y GEOLOCALIZACIÓN)
+// 1. CONFIGURACIÓN E INICIALIZACIÓN DE APIS Y TEMAS
 // ==========================================================================
 
 let modoEdicion = false;
 let idEnEdicion = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+    // 1. Ejecutar inmediatamente la validación del tema visual guardado
+    verificarTemaGuardado();
+    
+    // 2. Cargar contexto y renderizar tabla
     obtenerContextoRedYFisico();
     listarEquipos();
 
+    // 3. Enlazar eventos del formulario y filtros
     const formulario = document.getElementById("inventory-form");
     formulario.addEventListener("submit", procesarFormulario);
 
-    // Conexión de los eventos del buscador y filtro
     document.getElementById("search-input").addEventListener("input", filtrarInventario);
     document.getElementById("filter-status").addEventListener("change", filtrarInventario);
+
+    // 4. Enlazar evento al botón de modo noche
+    document.getElementById("theme-toggle").addEventListener("click", alternarModoNoche);
 });
 
 function obtenerContextoRedYFisico() {
@@ -304,4 +311,42 @@ function filtrarInventario() {
         `;
         tbody.appendChild(fila);
     });
+}
+
+// ==========================================================================
+// 5. MÓDULO DE MODO NOCHE (PERSISTENTE)
+// ==========================================================================
+
+function alternarModoNoche() {
+    const body = document.body;
+    const btn = document.getElementById("theme-toggle");
+
+    body.classList.toggle("dark-mode");
+
+    if (body.classList.contains("dark-mode")) {
+        localStorage.setItem("tema_sistema", "oscuro");
+        btn.innerHTML = "☀️ Modo Claro";
+        btn.style.backgroundColor = "#f1c40f";
+        btn.style.color = "#2c3e50";
+    } else {
+        localStorage.setItem("tema_sistema", "claro");
+        btn.innerHTML = "🌙 Modo Noche";
+        btn.style.backgroundColor = "#34495e";
+        btn.style.color = "white";
+    }
+}
+
+function verificarTemaGuardado() {
+    const temaGuardado = localStorage.getItem("tema_sistema");
+    const body = document.body;
+    const btn = document.getElementById("theme-toggle");
+
+    if (temaGuardado === "oscuro") {
+        body.classList.add("dark-mode");
+        if (btn) {
+            btn.innerHTML = "☀️ Modo Claro";
+            btn.style.backgroundColor = "#f1c40f";
+            btn.style.color = "#2c3e50";
+        }
+    }
 }
