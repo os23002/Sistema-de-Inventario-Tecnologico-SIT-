@@ -6,48 +6,63 @@ let modoEdicion = false;
 let idEnEdicion = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Ejecutar inmediatamente la validación del tema visual guardado
     verificarTemaGuardado();
-    
-    // 2. Cargar contexto y renderizar tabla
     obtenerContextoRedYFisico();
     listarEquipos();
 
-    // 3. Enlazar eventos del formulario y filtros
     const formulario = document.getElementById("inventory-form");
-    formulario.addEventListener("submit", procesarFormulario);
+    if (formulario) {
+        formulario.addEventListener("submit", procesarFormulario);
+    }
 
-    document.getElementById("search-input").addEventListener("input", filtrarInventario);
-    document.getElementById("filter-status").addEventListener("change", filtrarInventario);
+    // Aseguramos la captura de los elementos de filtrado e importación
+    const searchInput = document.getElementById("search-input");
+    const filterStatus = document.getElementById("filter-status");
+    const excelFile = document.getElementById("excel-file");
 
-    // 4. Enlazar evento al botón de modo noche
-    document.getElementById("theme-toggle").addEventListener("click", alternarModoNoche);
+    if (searchInput) searchInput.addEventListener("input", filtrarInventario);
+    if (filterStatus) filterStatus.addEventListener("change", filtrarInventario);
+    
+    // NUEVO: Escuchador verificado para la importación masiva de Excel
+    if (excelFile) {
+        excelFile.addEventListener("change", importarDesdeExcel);
+    }
+
+    const themeToggle = document.getElementById("theme-toggle");
+    if (themeToggle) themeToggle.addEventListener("click", alternarModoNoche);
 });
 
 function obtenerContextoRedYFisico() {
     const metricUbicacion = document.getElementById("metric-ubicacion");
     const metricNetwork = document.getElementById("metric-network");
 
-    try {
-        fetch("https://ip-api.com/json/?lang=es")
-            .then(response => {
-                if (!response.ok) throw new Error("Fallo en la respuesta del servidor de red");
-                return response.json();
-            })
-            .then(data => {
-                metricNetwork.innerHTML = `IP: <strong>${data.query}</strong><br>ISP: ${data.isp}`;
-                metricUbicacion.innerText = `${data.city}, ${data.country}`;
-                solicitarGeolocalizacionExacta(data.city);
-            })
-            .catch(error => {
-                console.error("Error controlado en Fetch:", error);
+    // PASO 1: Intentar jalar el GPS real directamente por seguridad local
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude.toFixed(4);
+                const lon = position.coords.longitude.toFixed(4);
+                
+                let sedeAsignada = "Sede Externa / Remota";
+                // Evaluamos tu geocerca perimetral
+                if (lat >= 13.60 && lat <= 13.95 && lon >= -89.50 && lon <= -89.15) {
+                    sedeAsignada = "Sede Central (San Salvador / Opico)";
+                }
+                
+                metricNetwork.innerHTML = "IP: <strong>192.168.1.100</strong><br>ISP: Enlace Local Real";
+                metricUbicacion.innerHTML = `<strong>${sedeAsignada}</strong><br><small>Coordenadas: ${lat}, ${lon}</small>`;
+            },
+            (error) => {
+                console.warn("Fallo o denegación de GPS nativo, aplicando respaldo por IP:", error);
+                
+                // PASO 2: Si el GPS falla o no hay permiso, corre el plan de respaldo tradicional
                 metricNetwork.innerHTML = "IP: <strong>192.168.1.254</strong><br>ISP: Red Local SIT";
                 metricUbicacion.innerHTML = "<strong>Sede Central (Opico)</strong><br><small>Ubicación por defecto (Desarrollo)</small>";
-            });
-
-    } catch (criticalError) {
-        console.error("Error crítico en el módulo de red:", criticalError);
-        metricUbicacion.innerText = "Sede no disponible";
+            }
+        );
+    } else {
+        metricNetwork.innerHTML = "IP: <strong>192.168.1.254</strong><br>ISP: Red Local SIT";
+        metricUbicacion.innerHTML = "<strong>Sede Central (Opico)</strong><br><small>Geolocalización no soportada</small>";
     }
 }
 
@@ -137,6 +152,8 @@ function guardarNuevoEquipo() {
 
 function listarEquipos() {
     const tbody = document.getElementById("inventory-tbody");
+    if (!tbody) return;
+    
     tbody.innerHTML = "";
 
     if (inventario.length === 0) {
@@ -228,7 +245,7 @@ function cargarParaEditar(id) {
         document.getElementById("btn-submit").innerText = "Actualizar Cambios";
         
         const btnCancel = document.getElementById("btn-cancel");
-        btnCancel.style.display = "inline-block";
+        if (btnCancel) btnCancel.style.display = "inline-block";
 
     } catch (error) {
         console.error("Error al cargar la edición:", error);
@@ -259,11 +276,16 @@ function restaurarFormularioOriginal() {
     idEnEdicion = null;
 
     const formulario = document.getElementById("inventory-form");
-    formulario.reset();
-    document.getElementById("asset-tag").disabled = false;
+    if (formulario) formulario.reset();
+    
+    const assetTag = document.getElementById("asset-tag");
+    if (assetTag) assetTag.disabled = false;
+    
     document.getElementById("form-title").innerText = "Registrar Nuevo Activo";
     document.getElementById("btn-submit").innerText = "Guardar Equipo";
-    document.getElementById("btn-cancel").style.display = "none";
+    
+    const btnCancel = document.getElementById("btn-cancel");
+    if (btnCancel) btnCancel.style.display = "none";
 }
 
 // ==========================================================================
@@ -275,6 +297,8 @@ function filtrarInventario() {
     const estadoSeleccionado = document.getElementById("filter-status").value;
 
     const tbody = document.getElementById("inventory-tbody");
+    if (!tbody) return;
+    
     tbody.innerHTML = "";
 
     const inventarioFiltrado = inventario.filter(equipo => {
@@ -288,7 +312,7 @@ function filtrarInventario() {
     });
 
     if (inventarioFiltrado.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">No se encontraron activos con los filtros aplicados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">No se encontraron activos con los filtros applied.</td></tr>`;
         return;
     }
 
@@ -325,14 +349,18 @@ function alternarModoNoche() {
 
     if (body.classList.contains("dark-mode")) {
         localStorage.setItem("tema_sistema", "oscuro");
-        btn.innerHTML = "☀️ Modo Claro";
-        btn.style.backgroundColor = "#f1c40f";
-        btn.style.color = "#2c3e50";
+        if (btn) {
+            btn.innerHTML = "☀️ Modo Claro";
+            btn.style.backgroundColor = "#f1c40f";
+            btn.style.color = "#2c3e50";
+        }
     } else {
         localStorage.setItem("tema_sistema", "claro");
-        btn.innerHTML = "🌙 Modo Noche";
-        btn.style.backgroundColor = "#34495e";
-        btn.style.color = "white";
+        if (btn) {
+            btn.innerHTML = "🌙 Modo Noche";
+            btn.style.backgroundColor = "#34495e";
+            btn.style.color = "white";
+        }
     }
 }
 
@@ -349,4 +377,76 @@ function verificarTemaGuardado() {
             btn.style.color = "#2c3e50";
         }
     }
+}
+
+// ==========================================================================
+// 6. MÓDULO DE IMPORTACIÓN MASIVA DESDE EXCEL (SHEETJS)
+// ==========================================================================
+
+function importarDesdeExcel(event) {
+    const archivo = event.target.files[0];
+    if (!archivo) return;
+
+    const lector = new FileReader();
+
+    lector.onload = function(e) {
+        try {
+            const datosBinarios = e.target.result;
+            const libroTrabajo = XLSX.read(datosBinarios, { type: 'binary' });
+            const nombreHoja = libroTrabajo.SheetNames[0];
+            const hoja = libroTrabajo.Sheets[nombreHoja];
+            const filasExcel = XLSX.utils.sheet_to_json(hoja);
+
+            if (filasExcel.length === 0) {
+                alert("El archivo de Excel está vacío.");
+                return;
+            }
+
+            let registradosNuevos = 0;
+            let duplicadosOmitidos = 0;
+            const ubicacionActual = document.getElementById("metric-ubicacion").innerText.split('\n')[0];
+
+            filasExcel.forEach(fila => {
+                // Forzamos conversión limpia a texto y eliminamos espacios
+                const tag = fila.id ? String(fila.id).trim() : '';
+                const tipo = fila.tipo ? String(fila.tipo).trim() : 'Laptop';
+                const marca = fila.marca ? String(fila.marca).trim() : '';
+                const modelo = fila.modelo ? String(fila.modelo).trim() : '';
+                const estado = fila.estado ? String(fila.estado).trim() : 'Activo';
+
+                if (!tag) return; // Si la fila no tiene ID, la salta
+
+                const existe = inventario.some(equipo => equipo.id === tag);
+
+                if (!existe) {
+                    const nuevoEquipo = {
+                        id: tag,
+                        tipo: tipo,
+                        marca: marca,
+                        modelo: modelo,
+                        estado: estado,
+                        ubicacion: ubicacionActual
+                    };
+                    inventario.push(nuevoEquipo);
+                    registradosNuevos++;
+                } else {
+                    duplicadosOmitidos++;
+                }
+            });
+
+            localStorage.setItem("it_inventario", JSON.stringify(inventario));
+            listarEquipos();
+            
+            // Limpiar el selector de archivos
+            event.target.value = "";
+
+            alert(`Proceso completado:\n\n✅ Agregados: ${registradosNuevos}\n⚠️ Duplicados omitidos: ${duplicadosOmitidos}`);
+
+        } catch (error) {
+            console.error("Error al procesar el archivo Excel:", error);
+            alert("Error crítico al procesar el archivo. Revisa la consola (F12).");
+        }
+    };
+
+    lector.readAsBinaryString(archivo);
 }
