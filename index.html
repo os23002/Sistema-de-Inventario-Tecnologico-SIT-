@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> SIT sistema de Inventario Tecnoclogico </title>
+    <title>SIT - Sistema de Inventario Tecnológico</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
-        <h1>SIT</h1> <div style="text-align: right; padding: 10px 20px;">
-    <button id="theme-toggle" style="background-color: #34495e; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s;">
-        🌙 Modo Noche
-    </button>
-</div>
-        <p>Sistema de Inventario Tecnoclogico</p>
+        <h1>SIT</h1> 
+        <div style="text-align: right; padding: 10px 20px;">
+            <button id="theme-toggle" style="background-color: #34495e; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s;">
+                🌙 Modo Noche
+            </button>
+        </div>
+        <p>Sistema de Inventario Tecnológico</p>
     </header>
 
     <main class="container">
-        
         
         <section class="dashboard-section">
             <h2>Dashboard Operativo</h2>
@@ -38,83 +38,84 @@
             </div>
         </section>
 
-        <hr>
+        <hr style="margin: 25px 0; border: 0; border-top: 1px solid var(--borde-color);">
 
-        <!-- seccion para el formulario (Crear / Editar) -->
-        <section class="form-section">
+        <section class="form-section form-container">
             <h2 id="form-title">Registrar Nuevo Activo</h2>
             <form id="inventory-form">
-                <!-- ID oculto para cuando estemos editando -->
                 <input type="hidden" id="asset-id-hidden">
 
-                <div class="form-group">
-                    <label for="asset-tag">Tag de Activo / Número de Serie:</label>
-                    <input type="text" id="asset-tag" required placeholder="Ej: CPU-2026-001">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="asset-tag">Tag de Activo / Número de Serie:</label>
+                        <input type="text" id="asset-tag" required placeholder="Ej: CPU-2026-001">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asset-type">Tipo de Dispositivo:</label>
+                        <select id="asset-type" required>
+                            <option value="">Seleccione una opción</option>
+                            <option value="CPU">Unidad Central (CPU)</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Servidor">Servidor</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asset-brand">Marca:</label>
+                        <input type="text" id="asset-brand" required placeholder="Ej: Dell, HP, Lenovo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asset-model">Modelo:</label>
+                        <input type="text" id="asset-model" required placeholder="Ej: ThinkCentre M70q">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asset-status">Estado Operativo:</label>
+                        <select id="asset-status" required>
+                            <option value="Activo">Activo / Operativo</option>
+                            <option value="Mantenimiento">En Mantenimiento Técnico</option>
+                            <option value="Baja">Baja Definitiva</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="asset-type">Tipo de Dispositivo:</label>
-                    <select id="asset-type" required>
-                        <option value="">Seleccione una opción</option>
-                        <option value="CPU">Unidad Central (CPU)</option>
-                        <option value="Monitor">Monitor</option>
-                        <option value="Laptop">Laptop</option>
-                        <option value="Servidor">Servidor</option>
-                    </select>
+                <div style="margin-top: 20px;">
+                    <button type="submit" id="btn-submit" class="btn-submit">Guardar Equipo</button>
+                    <button type="button" id="btn-cancel" style="display: none; background-color: #7f8c8d; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 10px;">Cancelar Edición</button>
                 </div>
-
-                <div class="form-group">
-                    <label for="asset-brand">Marca:</label>
-                    <input type="text" id="asset-brand" required placeholder="Ej: Dell, HP, Lenovo">
-                </div>
-
-                <div class="form-group">
-                    <label for="asset-model">Modelo:</label>
-                    <input type="text" id="asset-model" required placeholder="Ej: ThinkCentre M70q">
-                </div>
-
-                <div class="form-group">
-                    <label for="asset-status">Estado Operativo:</label>
-                    <select id="asset-status" required>
-                        <option value="Activo">Activo / Operativo</option>
-                        <option value="Mantenimiento">En Mantenimiento Técnica</option>
-                        <option value="Baja">Baja Definitiva</option>
-                    </select>
-                </div>
-
-                <button type="submit" id="btn-submit">Guardar Equipo</button>
-                <button type="button" id="btn-cancel" class="btn-secondary" style="display: none;">Cancelar Edición</button>
             </form>
         </section>
 
-        <hr>
+        <hr style="margin: 25px 0; border: 0; border-top: 1px solid var(--borde-color);">
 
-        <!-- acciones de eliminar y editar -->
-        <section class="table-section">
+        <section class="table-section table-container">
             <h2>Inventario de Activos Registrados</h2>
+            
             <div class="filter-container" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
-            
-            <div style="flex: 2; min-width: 250px;">
-                <input type="text" id="search-input" placeholder="🔍 Buscar por Tag, Marca o Modelo..." style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 0.95rem;">
-            </div>
-            
-            <div style="flex: 1; min-width: 150px;">
-                <select id="filter-status" style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 0.95rem; background-color: white;">
-                    <option value="Todos">Todos los estados</option>
-                    <option value="Activo">Solo Activos</option>
-                    <option value="Mantenimiento">En Mantenimiento</option>
-                    <option value="Baja">Baja Definitiva</option>
-                </select>
-            </div>
-            
-            <div style="flex: 1; min-width: 180px; display: flex; justify-content: flex-end;">
-                <label for="excel-file" style="background-color: #27ae60; color: white; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; text-align: center; width: 100%; transition: background 0.2s; display: inline-block;">
-                    📥 Importar Excel
-                </label>
-                <input type="file" id="excel-file" accept=".xlsx, .xls" style="display: none;">
+                <div style="flex: 2; min-width: 250px;">
+                    <input type="text" id="search-input" placeholder="🔍 Buscar por Tag, Marca o Modelo..." style="width: 100%; padding: 10px; border: 1px solid var(--borde-color); border-radius: 4px; font-size: 0.95rem; background-color: var(--bg-tarjetas); color: var(--texto-principal);">
+                </div>
+                
+                <div style="flex: 1; min-width: 150px;">
+                    <select id="filter-status" style="width: 100%; padding: 10px; border: 1px solid var(--borde-color); border-radius: 4px; font-size: 0.95rem; background-color: var(--bg-tarjetas); color: var(--texto-principal);">
+                        <option value="Todos">Todos los estados</option>
+                        <option value="Activo">Solo Activos</option>
+                        <option value="Mantenimiento">En Mantenimiento</option>
+                        <option value="Baja">Baja Definitiva</option>
+                    </select>
+                </div>
+                
+                <div style="flex: 1; min-width: 180px; display: flex; justify-content: flex-end;">
+                    <label for="excel-file" style="background-color: #27ae60; color: white; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; text-align: center; width: 100%; transition: background 0.2s; display: inline-block;">
+                        📥 Importar Excel
+                    </label>
+                    <input type="file" id="excel-file" accept=".xlsx, .xls" style="display: none;">
+                </div>
             </div>
 
-        </div>
             <div class="table-responsive">
                 <table id="inventory-table">
                     <thead>
@@ -127,16 +128,13 @@
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="inventory-tbody">
-                       
-                    </tbody>
+                    <tbody id="inventory-tbody"></tbody>
                 </table>
             </div>
         </section>
     </main>
   
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

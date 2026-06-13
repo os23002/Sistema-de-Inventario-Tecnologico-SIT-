@@ -1,12 +1,10 @@
-// ==========================================================================
-// 1. CONFIGURACIÓN E INICIALIZACIÓN DE APIS Y TEMAS
-// ==========================================================================
-
 let modoEdicion = false;
 let idEnEdicion = null;
+let inventario = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     verificarTemaGuardado();
+    recuperarFiltroSesion(); // Carga filtro si se recarga la pestaña
     obtenerContextoRedYFisico();
     listarEquipos();
 
@@ -15,47 +13,57 @@ document.addEventListener("DOMContentLoaded", () => {
         formulario.addEventListener("submit", procesarFormulario);
     }
 
-    // Aseguramos la captura de los elementos de filtrado e importación
     const searchInput = document.getElementById("search-input");
     const filterStatus = document.getElementById("filter-status");
     const excelFile = document.getElementById("excel-file");
 
     if (searchInput) searchInput.addEventListener("input", filtrarInventario);
     if (filterStatus) filterStatus.addEventListener("change", filtrarInventario);
-    
-    // NUEVO: Escuchador verificado para la importación masiva de Excel
-    if (excelFile) {
-        excelFile.addEventListener("change", importarDesdeExcel);
-    }
+    if (excelFile) excelFile.addEventListener("change", importarDesdeExcel);
 
     const themeToggle = document.getElementById("theme-toggle");
     if (themeToggle) themeToggle.addEventListener("click", alternarModoNoche);
 });
 
+// Geolocalización + Fetch a la API de clima externo
 function obtenerContextoRedYFisico() {
     const metricUbicacion = document.getElementById("metric-ubicacion");
     const metricNetwork = document.getElementById("metric-network");
 
-    // PASO 1: Intentar jalar el GPS real directamente por seguridad local
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                const lat = position.coords.latitude.toFixed(4);
-                const lon = position.coords.longitude.toFixed(4);
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
                 
                 let sedeAsignada = "Sede Externa / Remota";
-                // Evaluamos tu geocerca perimetral
+                
+                // Rango de coordenadas para validar si está en la planta central
                 if (lat >= 13.60 && lat <= 13.95 && lon >= -89.50 && lon <= -89.15) {
                     sedeAsignada = "Sede Central (San Salvador / Opico)";
                 }
                 
-                metricNetwork.innerHTML = "IP: <strong>192.168.1.100</strong><br>ISP: Enlace Local Real";
-                metricUbicacion.innerHTML = `<strong>${sedeAsignada}</strong><br><small>Coordenadas: ${lat}, ${lon}</small>`;
+                // Petición fetch a Open-Meteo para sacar clima local en vivo
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+                    .then(response => {
+                        if (!response.ok) throw new Error("Error en API de clima");
+                        return response.json();
+                    })
+                    .then(data => {
+                        const temp = data.current_weather.temperature;
+                        const windspeed = data.current_weather.windspeed;
+                        
+                        metricNetwork.innerHTML = `IP: <strong>192.168.1.100</strong><br>Clima Auditoría: <strong>${temp}°C</strong>, Viento a ${windspeed} km/h`;
+                        metricUbicacion.innerHTML = `<strong>${sedeAsignada}</strong><br><small>Coordenadas: ${lat.toFixed(4)}, ${lon.toFixed(4)}</small>`;
+                    })
+                    .catch(error => {
+                        console.error("Fallo en Fetch de clima:", error);
+                        metricNetwork.innerHTML = "IP: <strong>192.168.1.100</strong><br>ISP: Enlace Real (API offline)";
+                        metricUbicacion.innerHTML = `<strong>${sedeAsignada}</strong><br><small>Coordenadas: ${lat.toFixed(4)}, ${lon.toFixed(4)}</small>`;
+                    });
             },
             (error) => {
-                console.warn("Fallo o denegación de GPS nativo, aplicando respaldo por IP:", error);
-                
-                // PASO 2: Si el GPS falla o no hay permiso, corre el plan de respaldo tradicional
+                console.warn("GPS denegado, usando fallback:", error);
                 metricNetwork.innerHTML = "IP: <strong>192.168.1.254</strong><br>ISP: Red Local SIT";
                 metricUbicacion.innerHTML = "<strong>Sede Central (Opico)</strong><br><small>Ubicación por defecto (Desarrollo)</small>";
             }
@@ -66,49 +74,17 @@ function obtenerContextoRedYFisico() {
     }
 }
 
-function solicitarGeolocalizacionExacta(ciudadIP) {
-    const metricUbicacion = document.getElementById("metric-ubicacion");
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude.toFixed(4);
-                const lon = position.coords.longitude.toFixed(4);
-                
-                let sedeAsignada = "Sede Externa / Remota";
-                if (lat >= 13.60 && lat <= 13.95 && lon >= -89.50 && lon <= -89.15) {
-                    sedeAsignada = "Sede Central (San Salvador / Opico)";
-                }
-                
-                metricUbicacion.innerHTML = `<strong>${sedeAsignada}</strong><br><small>Coordenadas: ${lat}, ${lon}</small>`;
-            },
-            (error) => {
-                console.warn("Permiso de ubicación denegado.");
-                metricUbicacion.innerHTML = `<strong>Sede: ${ciudadIP}</strong><br><small>(Permiso GPS denegado)</small>`;
-            }
-        );
-    } else {
-        metricUbicacion.innerText = "Geolocalización no soportada";
-    }
-}
-
-// ==========================================================================
-// 2. ESTRUCTURA DEL CRUD Y MANEJO DE LOCALSTORAGE
-// ==========================================================================
-
-let inventario = [];
-
+// Carga inicial desde LocalStorage con manejo de excepciones
 try {
     const datosLocales = localStorage.getItem("it_inventario");
     inventario = datosLocales ? JSON.parse(datosLocales) : [];
 } catch (error) {
-    console.error("Error al cargar datos desde LocalStorage:", error);
+    console.error("Error al leer LocalStorage:", error);
     inventario = [];
 }
 
 function procesarFormulario(event) {
     event.preventDefault();
-
     if (modoEdicion) {
         actualizarEquipoRegistrado(idEnEdicion);
     } else {
@@ -124,8 +100,7 @@ function guardarNuevoEquipo() {
         const modelo = document.getElementById("asset-model").value.trim();
         const estado = document.getElementById("asset-status").value;
 
-        const existe = inventario.some(equipo => equipo.id === tag);
-        if (existe) {
+        if (inventario.some(equipo => equipo.id === tag)) {
             alert("Error: Ya existe un equipo registrado con ese Tag / Número de Serie.");
             return;
         }
@@ -144,9 +119,8 @@ function guardarNuevoEquipo() {
         document.getElementById("inventory-form").reset();
         listarEquipos();
         alert("Equipo registrado con éxito.");
-
     } catch (error) {
-        console.error("Error crítico al guardar el equipo:", error);
+        console.error("Error al guardar equipo:", error);
     }
 }
 
@@ -163,7 +137,23 @@ function listarEquipos() {
         return;
     }
 
-    inventario.forEach(equipo => {
+    // Filtros combinados de búsqueda por texto y estado
+    const textoBusqueda = document.getElementById("search-input").value.toLowerCase().trim();
+    const estadoSeleccionado = document.getElementById("filter-status").value;
+
+    const inventarioMostrar = inventario.filter(equipo => {
+        const coincideTexto = equipo.id.toLowerCase().includes(textoBusqueda) ||
+                              equipo.marca.toLowerCase().includes(textoBusqueda) ||
+                              equipo.modelo.toLowerCase().includes(textoBusqueda);
+        const coincideEstado = (estadoSeleccionado === "Todos") || (equipo.estado === estadoSeleccionado);
+        return coincideTexto && coincideEstado;
+    });
+
+    if (inventarioMostrar.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">No se encontraron activos.</td></tr>`;
+    }
+
+    inventarioMostrar.forEach(equipo => {
         const fila = document.createElement("tr");
         let claseBadge = "activo";
         if (equipo.estado === "Mantenimiento") claseBadge = "mantenimiento";
@@ -176,13 +166,14 @@ function listarEquipos() {
             <td><span class="badge ${claseBadge}">${equipo.estado}</span></td>
             <td><small>${equipo.ubicacion}</small></td>
             <td>
-                <button class="btn-action btn-edit" style="background-color: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="cargarParaEditar('${equipo.id}')">Editar</button>
+                <button class="btn-action btn-edit" style="background-color: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-right: 4px;" onclick="cargarParaEditar('${equipo.id}')">Editar</button>
                 <button class="btn-action btn-delete" style="background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="eliminarEquipo('${equipo.id}')">Eliminar</button>
             </td>
         `;
         tbody.appendChild(fila);
     });
 
+    // Delegación del cálculo de métricas pesadas al Web Worker
     if (window.Worker) {
         const miWorker = new Worker("worker.js");
         miWorker.postMessage(inventario);
@@ -192,9 +183,8 @@ function listarEquipos() {
             document.getElementById("metric-total").innerText = metricas.totalEquipos;
             document.getElementById("metric-mantenimiento").innerText = metricas.mantenimientoEquipos;
         };
-
         miWorker.onerror = function(error) {
-            console.error("Error en el hilo del Web Worker:", error);
+            console.error("Error en Web Worker:", error);
         };
     } else {
         document.getElementById("metric-total").innerText = inventario.length;
@@ -202,25 +192,19 @@ function listarEquipos() {
     }
 }
 
-// ==========================================================================
-// 3. FUNCIONES DE ELIMINAR Y EDITAR (COMPLETANDO EL CRUD)
-// ==========================================================================
-
 function eliminarEquipo(id) {
     if (modoEdicion && idEnEdicion === id) {
         restaurarFormularioOriginal();
     }
 
-    const confirmar = confirm(`¿Está seguro de que desea eliminar el equipo con Tag: ${id}?`);
-    
-    if (confirmar) {
+    if (confirm(`¿Está seguro de que desea eliminar el equipo con Tag: ${id}?`)) {
         try {
             inventario = inventario.filter(equipo => equipo.id !== id);
             localStorage.setItem("it_inventario", JSON.stringify(inventario));
             listarEquipos();
             alert("Equipo eliminado del inventario correctamente.");
         } catch (error) {
-            console.error("Error al eliminar el equipo:", error);
+            console.error("Error al eliminar equipo:", error);
         }
     }
 }
@@ -246,9 +230,8 @@ function cargarParaEditar(id) {
         
         const btnCancel = document.getElementById("btn-cancel");
         if (btnCancel) btnCancel.style.display = "inline-block";
-
     } catch (error) {
-        console.error("Error al cargar la edición:", error);
+        console.error("Error al cargar datos en formulario:", error);
     }
 }
 
@@ -267,7 +250,7 @@ function actualizarEquipoRegistrado(id) {
             alert("Activo tecnológico actualizado con éxito.");
         }
     } catch (error) {
-        console.error("Error al actualizar el equipo:", error);
+        console.error("Error al actualizar datos:", error);
     }
 }
 
@@ -288,63 +271,32 @@ function restaurarFormularioOriginal() {
     if (btnCancel) btnCancel.style.display = "none";
 }
 
-// ==========================================================================
-// 4. MÓDULO DE BÚSQUEDA Y FILTRADO EN TIEMPO REAL
-// ==========================================================================
-
+// Guarda filtros en SessionStorage para retener estado temporal
 function filtrarInventario() {
-    const textoBusqueda = document.getElementById("search-input").value.toLowerCase().trim();
+    const textoBusqueda = document.getElementById("search-input").value;
     const estadoSeleccionado = document.getElementById("filter-status").value;
-
-    const tbody = document.getElementById("inventory-tbody");
-    if (!tbody) return;
     
-    tbody.innerHTML = "";
-
-    const inventarioFiltrado = inventario.filter(equipo => {
-        const coincideTexto = equipo.id.toLowerCase().includes(textoBusqueda) ||
-                              equipo.marca.toLowerCase().includes(textoBusqueda) ||
-                              equipo.modelo.toLowerCase().includes(textoBusqueda);
-
-        const coincideEstado = (estadoSeleccionado === "Todos") || (equipo.estado === estadoSeleccionado);
-
-        return coincideTexto && coincideEstado;
-    });
-
-    if (inventarioFiltrado.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">No se encontraron activos con los filtros applied.</td></tr>`;
-        return;
-    }
-
-    inventarioFiltrado.forEach(equipo => {
-        const fila = document.createElement("tr");
-        let claseBadge = "activo";
-        if (equipo.estado === "Mantenimiento") claseBadge = "mantenimiento";
-        if (equipo.estado === "Baja") claseBadge = "baja";
-
-        fila.innerHTML = `
-            <td><strong>${equipo.id}</strong></td>
-            <td>${equipo.tipo}</td>
-            <td>${equipo.marca} ${equipo.modelo}</td>
-            <td><span class="badge ${claseBadge}">${equipo.estado}</span></td>
-            <td><small>${equipo.ubicacion}</small></td>
-            <td>
-                <button class="btn-action btn-edit" style="background-color: #2980b9; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="cargarParaEditar('${equipo.id}')">Editar</button>
-                <button class="btn-action btn-delete" style="background-color: #c0392b; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" onclick="eliminarEquipo('${equipo.id}')">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(fila);
-    });
+    sessionStorage.setItem("sit_ultimo_filtro_texto", textoBusqueda);
+    sessionStorage.setItem("sit_ultimo_filtro_estado", estadoSeleccionado);
+    
+    listarEquipos();
 }
 
-// ==========================================================================
-// 5. MÓDULO DE MODO NOCHE (PERSISTENTE)
-// ==========================================================================
+function recuperarFiltroSesion() {
+    const filtroTextoGuardado = sessionStorage.getItem("sit_ultimo_filtro_texto");
+    const filtroEstadoGuardado = sessionStorage.getItem("sit_ultimo_filtro_estado");
+    
+    if (filtroTextoGuardado) {
+        document.getElementById("search-input").value = filtroTextoGuardado;
+    }
+    if (filtroEstadoGuardado) {
+        document.getElementById("filter-status").value = filtroEstadoGuardado;
+    }
+}
 
 function alternarModoNoche() {
     const body = document.body;
     const btn = document.getElementById("theme-toggle");
-
     body.classList.toggle("dark-mode");
 
     if (body.classList.contains("dark-mode")) {
@@ -379,16 +331,12 @@ function verificarTemaGuardado() {
     }
 }
 
-// ==========================================================================
-// 6. MÓDULO DE IMPORTACIÓN MASIVA DESDE EXCEL (SHEETJS)
-// ==========================================================================
-
+// Lógica de importación asíncrona de archivos Excel con SheetJS
 function importarDesdeExcel(event) {
     const archivo = event.target.files[0];
     if (!archivo) return;
 
     const lector = new FileReader();
-
     lector.onload = function(e) {
         try {
             const datosBinarios = e.target.result;
@@ -407,27 +355,23 @@ function importarDesdeExcel(event) {
             const ubicacionActual = document.getElementById("metric-ubicacion").innerText.split('\n')[0];
 
             filasExcel.forEach(fila => {
-                // Forzamos conversión limpia a texto y eliminamos espacios
                 const tag = fila.id ? String(fila.id).trim() : '';
                 const tipo = fila.tipo ? String(fila.tipo).trim() : 'Laptop';
                 const marca = fila.marca ? String(fila.marca).trim() : '';
                 const modelo = fila.modelo ? String(fila.modelo).trim() : '';
                 const estado = fila.estado ? String(fila.estado).trim() : 'Activo';
 
-                if (!tag) return; // Si la fila no tiene ID, la salta
+                if (!tag) return;
 
-                const existe = inventario.some(equipo => equipo.id === tag);
-
-                if (!existe) {
-                    const nuevoEquipo = {
+                if (!inventario.some(equipo => equipo.id === tag)) {
+                    inventario.push({
                         id: tag,
                         tipo: tipo,
                         marca: marca,
                         modelo: modelo,
                         estado: estado,
                         ubicacion: ubicacionActual
-                    };
-                    inventario.push(nuevoEquipo);
+                    });
                     registradosNuevos++;
                 } else {
                     duplicadosOmitidos++;
@@ -436,17 +380,13 @@ function importarDesdeExcel(event) {
 
             localStorage.setItem("it_inventario", JSON.stringify(inventario));
             listarEquipos();
-            
-            // Limpiar el selector de archivos
             event.target.value = "";
 
             alert(`Proceso completado:\n\n✅ Agregados: ${registradosNuevos}\n⚠️ Duplicados omitidos: ${duplicadosOmitidos}`);
-
         } catch (error) {
-            console.error("Error al procesar el archivo Excel:", error);
+            console.error("Error al parsear Excel:", error);
             alert("Error crítico al procesar el archivo. Revisa la consola (F12).");
         }
     };
-
     lector.readAsBinaryString(archivo);
 }
